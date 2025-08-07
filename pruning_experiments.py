@@ -51,7 +51,7 @@ def train_pruning_models(model, train_data, val_data, num_epoch, dataset_name = 
     assert model.node_dim_ == input_data.shape[-1], 'Mismatch in model and data node/particle dimensions.'
 
     #set up the pruning config
-    model.set_pruning_schedule(num_epoch, schedule=schedule, end_epoch_frac=end_epoch_frac)
+    model.edge_model.set_schedule(num_epoch, decay_rate=schedule, end_epoch_frac=end_epoch_frac)
     
     dataset = [Data(x=input_data[i], edge_index=edge_index, y=acc[i]) for i in range(len(input_data))]
     batch_size = int(64*(4/input_data.shape[1])**2) 
@@ -67,7 +67,7 @@ def train_pruning_models(model, train_data, val_data, num_epoch, dataset_name = 
     else:
         mode = 'disabled'
 
-    wandb.init(project = f'pruning_experiments_{dataset_name}',
+    wandb.init(project = f'pruning_experiments_{dataset_name}_',
             name = f'{schedule}_end_epoch_frac{end_epoch_frac}',
             config={'num_epochs': num_epoch, 'num_nodes': num_nodes, 'dim': acc_dim, 'schedule': schedule, 'end_epoch_frac': end_epoch_frac}, 
             mode = mode
@@ -99,7 +99,8 @@ def train_pruning_models(model, train_data, val_data, num_epoch, dataset_name = 
 
     #use the validation data to check important messages for pruning
     idx = np.random.choice(len(val_dataset), size=10_240, replace=False)
-    sample_data = [
+    all_inputs = []
+    sample_Data = [
         Data(
             x=val_dataset[i].x.clone(),
             edge_index=val_dataset[i].edge_index.clone(), 
@@ -107,14 +108,18 @@ def train_pruning_models(model, train_data, val_data, num_epoch, dataset_name = 
         ).to(accelerator.device) 
         for i in idx
     ]
+    for datapoint in sample_Data:
+        source_nodes = datapoint.x[datapoint.edge_index[0]]
+        target_nodes = datapoint.x[datapoint.edge_index[1]]
+        x = torch.cat((source_nodes, target_nodes), dim=1)
+        all_inputs.append(x)
+    sample_data = torch.cat(all_inputs, dim=0)
 
     for epoch in range(num_epoch):
 
-        if epoch in model.pruning_schedule:
-           #update mask at specific epochs using val data
-            model.update_pruning_mask(epoch, sample_data)
-            
-        active_dims_history.append(model.current_message_dim)
+
+        model.edge_model.prune(epoch, sample_data, parent_model=None)
+        active_dims_history.append(model.edge_model.current_dim)
 
         total_loss = 0 #loss tracking
         i = 0
@@ -160,10 +165,10 @@ def train_pruning_models(model, train_data, val_data, num_epoch, dataset_name = 
             'epoch': epoch, 
             'train_loss': avg_loss,
             'val_loss': avg_val_loss,
-            'active_message_dims': model.current_message_dim
+            'active_message_dims': model.edge_model.current_dim
         }
 
-        print(f'training loss: {avg_loss:.4f}, val loss: {avg_val_loss:.4f}, active msg dims: {model.current_message_dim}')
+        print(f'training loss: {avg_loss:.4f}, val loss: {avg_val_loss:.4f}, active msg dims: {model.edge_model.current_dim}')
 
         wandb.log(log_dict)
 
@@ -187,10 +192,10 @@ def train_pruning_models(model, train_data, val_data, num_epoch, dataset_name = 
             'message_dim': model.message_dim_
         }
 
-        checkpoint['pruning_mask'] = model.pruning_mask
-        checkpoint['current_message_dim'] = model.current_message_dim
-        checkpoint['initial_message_dim'] = model.initial_message_dim
-        checkpoint['target_message_dim'] = model.target_message_dim
+        checkpoint['pruning_mask'] = model.edge_model.pruning_mask
+        checkpoint['current_message_dim'] = model.edge_model.current_dim
+        checkpoint['initial_message_dim'] = model.edge_model.initial_dim
+        checkpoint['target_message_dim'] = model.edge_model.target_dim
 
         torch.save(checkpoint, f'{save_path}/end_epoch_frac{end_epoch_frac}_epoch{num_epoch}_model.pth')
         #log training run in json file
@@ -207,7 +212,7 @@ def train_pruning_models(model, train_data, val_data, num_epoch, dataset_name = 
                    'val_loss': val_losses
                    }
         metrics['active_dims_history'] = active_dims_history
-        metrics['final_message_dims'] = model.current_message_dim
+        metrics['final_message_dims'] = model.edge_model.current_dim
         with open(f'{save_path}/end_epoch_frac{end_epoch_frac}_epoch{num_epoch}_metrics.json', 'w') as json_file:
             json.dump(metrics, json_file, indent = 4)
 
@@ -237,11 +242,11 @@ def load_pruning_models(dataset_name, pruning_schedule, end_epoch_frac, num_epoc
         acc_dim=checkpoint['acc_dim'],
         hidden_dim=checkpoint['hidden_dim'], 
     )
-    #update the configs
-    model.pruning_mask = checkpoint['pruning_mask']
-    model.current_message_dim = checkpoint['current_message_dim']
-    model.initial_message_dim = checkpoint['initial_message_dim']
-    model.target_message_dim = checkpoint['target_message_dim']
+    #update the configs - Load data into the registered buffer to maintain device consistency
+    model.edge_model.pruning_mask.data = checkpoint['pruning_mask'].data
+    model.edge_model.current_dim = checkpoint['current_message_dim']
+    model.edge_model.initial_dim = checkpoint['initial_message_dim']
+    model.edge_model.target_dim = checkpoint['target_message_dim']
 
     #add model weights
     model.load_state_dict(checkpoint['model_state_dict'])
@@ -294,7 +299,7 @@ def main():
 
     for schedule in schedules:
         for end_epoch_frac in end_epoch_fracs:
-            model = PruningGN()
+            model = create_model('pruning')
             model = train_pruning_models(model, train_data=train_data, val_data=val_data, dataset_name = 'charge', schedule=schedule, 
                                         end_epoch_frac=end_epoch_frac, num_epoch=args.epoch, save = args.save, wandb_log = args.wandb_log)
     
