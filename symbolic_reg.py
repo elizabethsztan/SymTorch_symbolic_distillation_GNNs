@@ -21,7 +21,6 @@ Author: SymTorch Symbolic Distillation Project
 
 import symtorch 
 from symtorch.mlp_sr import MLP_SR
-from plot_linear_rep import get_message_features
 from model import load_model, get_edge_index
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
