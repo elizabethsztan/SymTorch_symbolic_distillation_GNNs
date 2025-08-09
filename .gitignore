@@ -3,6 +3,7 @@ old_notebooks/
 testing.ipynb
 bad_results/
 testing_sr.ipynb
+run_all.py
 
 #Virtual env
 .venv/
