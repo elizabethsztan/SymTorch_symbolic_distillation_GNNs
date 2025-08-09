@@ -12,8 +12,6 @@ from datetime import datetime
 import json
 import numpy as np
 import math
-import sys
-sys.path.append("/Users/liz/PhD/SymTorch_project/SymTorch/src")
 from symtorch.toolkit import Pruning_MLP
 
 script_dir = os.path.dirname(os.path.abspath(__file__))

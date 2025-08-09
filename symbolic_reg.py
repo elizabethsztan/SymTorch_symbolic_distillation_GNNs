@@ -1,5 +1,5 @@
-import sys
-sys.path.append("/Users/liz/PhD/SymTorch_project/SymTorch/src")
+# import sys
+# sys.path.append("/Users/liz/PhD/SymTorch_project/SymTorch/src")
 
 
 import symtorch as SymTorch
