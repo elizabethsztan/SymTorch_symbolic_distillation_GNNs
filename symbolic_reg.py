@@ -145,10 +145,14 @@ def main():
         # For KL models, extract mean components from variational output
         raw_outputs = model.edge_model(all_inputs).detach().numpy()
         messages = raw_outputs[:, 0::2]  # Extract mean components (every other element)
-        
-        msg_importance = messages.std(axis=0)
-        dim0 = np.argsort(msg_importance)[-1]
-        dim1 = np.argsort(msg_importance)[-2]
+        logvars = raw_outputs[:, 1::2]
+
+        KL_div =  (np.exp(logvars) + messages**2 - logvars)/2
+        KL_mean = KL_div.mean(axis=0)
+        most_important = np.argsort(KL_mean)[-2:]
+        msgs_to_compare = messages[:, most_important]
+        dim0 = msgs_to_compare[0] * 2
+        dim1 = msgs_to_compare[1] * 2 # Because the message dims are even
 
 
     # Sample subset of data for symbolic regression (for computational efficiency)
