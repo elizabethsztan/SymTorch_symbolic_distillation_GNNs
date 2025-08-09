@@ -42,7 +42,7 @@ def main():
 
     model = load_model(dataset_name=dataset, model_type=model_type, num_epoch=num_epoch)
 
-    if model.type != 'pruning':
+    if model_type != 'pruning':
         model.edge_model = MLP_SR(model.edge_model, mlp_name = model_type)
 
     X_test, y_test = test_data
@@ -78,14 +78,14 @@ def main():
     print(f"Input tensor shape: {all_inputs.shape}")
     print("Running symbolic regression...")
 
-    if model.type == 'standard' or model.type == 'L1':
+    if model_type == 'standard' or model_type == 'L1':
 
         messages = model.edge_model(all_inputs).detach().numpy()
         msg_importance = messages.std(axis=0)
         dim0 = np.argsort(msg_importance)[-1]
         dim1 = np.argsort(msg_importance)[-2]
     
-    elif model.type == 'KL':
+    elif model_type == 'KL':
         raw_outputs = model.edge_model(all_inputs).detach().numpy()
         messages = raw_outputs[:, 0::2]
 
@@ -98,7 +98,7 @@ def main():
     idx = np.random.choice(len(all_inputs), size=num_points, replace=False)
     inputs_subset = all_inputs[idx]
 
-    if model.type == 'standard' or model.type == 'L1' or model.type == 'KL':
+    if model_type == 'standard' or model_type == 'L1' or model_type == 'KL':
 
         # Run symbolic regression
         result = model.edge_model.interpret(
@@ -167,3 +167,6 @@ def main():
     print("Symbolic regression completed!")
     print(f"Results saved to: {save_path}")
 
+
+if __name__ == "__main__":
+    main()
