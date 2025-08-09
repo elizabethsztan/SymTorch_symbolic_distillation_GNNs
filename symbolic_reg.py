@@ -2,7 +2,7 @@
 # sys.path.append("/Users/liz/PhD/SymTorch_project/SymTorch/src")
 
 
-import symtorch as SymTorch
+import symtorch 
 from symtorch.mlp_sr import MLP_SR
 from plot_linear_rep import get_message_features
 from model import load_model, get_edge_index
