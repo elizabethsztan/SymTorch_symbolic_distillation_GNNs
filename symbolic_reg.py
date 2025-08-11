@@ -149,9 +149,8 @@ def main():
         KL_div =  (np.exp(logvars) + messages**2 - logvars)/2
         KL_mean = KL_div.mean(axis=0)
         most_important = np.argsort(KL_mean)[-2:]
-        msgs_to_compare = messages[:, most_important]
-        dim0 = msgs_to_compare[0] * 2
-        dim1 = msgs_to_compare[1] * 2 # Because the message dims are even
+        dim0 = most_important[1] * 2  # Most important dimension index (even)
+        dim1 = most_important[0] * 2  # Second most important dimension index (even)
 
 
     # Sample subset of data for symbolic regression (for computational efficiency)
@@ -159,52 +158,40 @@ def main():
     idx = np.random.choice(len(all_inputs), size=num_points, replace=False)
     inputs_subset = all_inputs[idx]
 
+    # For models with multiple dimensions, analyse top 2 most important dimensions
+    sr_params = {'niterations':niterations,
+                    'parsimony':0.05,                    # Simplicity preference
+                    'complexity_of_constants':1,         # Penalty for complex constants
+                    'maxsize': 25,                        # Max expression size
+                    'elementwise_loss':"loss(prediction, target) = abs(prediction - target)",
+                    'batching':True,
+                    'unary_operators':["inv(x) = 1/x", "exp", "log"],
+                    'constraints':{'exp': (1), 'log': (1)},
+                    'complexity_of_operators':{'exp': 3, 'sin': 3, 'log': 3}}
+    
+    fit_params = {'variable_names':variable_names}
+
     # Run symbolic regression on selected message dimensions
     if model_type == 'standard' or model_type == 'L1' or model_type == 'KL':
-        # For models with multiple dimensions, analyse top 2 most important dimensions
+
         
         # First dimension (most important)
         result = model.edge_model.interpret(
             inputs_subset,
             output_dim=dim0,
             variable_transforms=variable_transforms,
-            variable_names=variable_names,
-            niterations=niterations,
-            save_path=save_path,
-            parsimony=0.05,                    # Simplicity preference
-            complexity_of_constants=1,         # Penalty for complex constants
-            maxsize=25,                        # Max expression size
-            elementwise_loss="loss(prediction, target) = abs(prediction - target)",
-            batching=True,
-            unary_operators=[
-                "inv(x) = 1/x",               # Inverse for 1/r, 1/r² laws
-                "exp",
-                "log"
-            ],
-            constraints={'exp': (1), 'log': (1)},
-            complexity_of_operators={'exp': 3, 'sin': 3, 'log': 3}
-        )
+            sr_params = sr_params,
+            fit_params = fit_params, 
+            save_path=save_path)
 
         # Second dimension (second most important)
         result = model.edge_model.interpret(
             inputs_subset,
             output_dim=dim1,
             variable_transforms=variable_transforms,
-            variable_names=variable_names,
-            niterations=niterations,
-            save_path=save_path,
-            parsimony=0.05,
-            complexity_of_constants=1,
-            maxsize=25,
-            elementwise_loss="loss(prediction, target) = abs(prediction - target)",
-            batching=True,
-            unary_operators=[
-                "inv(x) = 1/x",
-                "exp",
-                "log"
-            ],
-            constraints={'exp': (1), 'log': (1)},
-            complexity_of_operators={'exp': 3, 'sin': 3, 'log': 3}
+            sr_params = sr_params,
+            fit_params = fit_params, 
+            save_path=save_path
         )
 
     else:
@@ -212,21 +199,9 @@ def main():
         result = model.edge_model.interpret(
             inputs_subset,
             variable_transforms=variable_transforms,
-            variable_names=variable_names,
-            niterations=niterations,
-            save_path=save_path,
-            parsimony=0.05,
-            complexity_of_constants=1,
-            maxsize=25,
-            batching=True,
-            unary_operators=[
-                "inv(x) = 1/x",
-                "exp",
-                "log"
-            ],
-            constraints={'exp': (1), 'log': (1)},
-            complexity_of_operators={'exp': 3, 'sin': 3, 'log': 3},
-            elementwise_loss="loss(prediction, target) = abs(prediction - target)"
+            sr_params = sr_params,
+            fit_params = fit_params, 
+            save_path=save_path
         )
 
     print("Symbolic regression completed!")
