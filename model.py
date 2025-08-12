@@ -12,7 +12,7 @@ from datetime import datetime
 import json
 import numpy as np
 import math
-from symtorch.toolkit import Pruning_MLP
+from symtorch import Pruning_MLP
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 # script_dir = os.getcwd()
