@@ -1,26 +1,5 @@
-"""
-Symbolic Regression for Graph Neural Network Message Analysis.
-
-This module performs symbolic regression on trained GNN models to extract
-interpretable physics laws from learned message representations. It uses
-PySR (via SymTorch) to discover symbolic expressions that relate particle
-interactions to the messages learned by different GNN variants.
-
-The script supports analysis of various model types:
-- standard: Base NBodyGNN with 100-dimensional messages
-- bottleneck: BottleneckGN with 2-dimensional messages
-- KL: KLGN with variational message passing
-- L1: L1GN with L1 regularisation
-- pruning: PruningGN with dynamic dimension reduction
-
-Typical usage:
-    python symbolic_reg.py --dataset_name spring --model_type bottleneck
-
-Author: SymTorch Symbolic Distillation Project
-"""
-
 import symtorch 
-from symtorch.mlp_sr import MLP_SR
+from symtorch import MLP_SR
 from model import load_model, get_edge_index
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
@@ -135,10 +114,11 @@ def main():
     # Identify most important message dimensions for regression
     if model_type == 'standard' or model_type == 'L1':
         # For standard models, use all message dimensions
-        messages = model.edge_model(all_inputs).detach().numpy()
-        msg_importance = messages.std(axis=0)  # Variance as importance metric
-        dim0 = np.argsort(msg_importance)[-1]  # Most important dimension
-        dim1 = np.argsort(msg_importance)[-2]  # Second most important
+        important_dims_info = model.edge_model.get_importance(all_inputs)
+        important_dims = important_dims_info['importance']
+
+        dim0 = important_dims[0]
+        dim1 = important_dims[1]
     
     elif model_type == 'KL':
         # For KL models, extract mean components from variational output
@@ -176,7 +156,7 @@ def main():
 
         
         # First dimension (most important)
-        result = model.edge_model.interpret(
+        result = model.edge_model.distill(
             inputs_subset,
             output_dim=dim0,
             variable_transforms=variable_transforms,
@@ -185,7 +165,7 @@ def main():
             save_path=save_path)
 
         # Second dimension (second most important)
-        result = model.edge_model.interpret(
+        result = model.edge_model.distill(
             inputs_subset,
             output_dim=dim1,
             variable_transforms=variable_transforms,
@@ -196,7 +176,7 @@ def main():
 
     else:
         # For bottleneck and pruning models, analyse all available dimensions
-        result = model.edge_model.interpret(
+        result = model.edge_model.distill(
             inputs_subset,
             variable_transforms=variable_transforms,
             sr_params = sr_params,
