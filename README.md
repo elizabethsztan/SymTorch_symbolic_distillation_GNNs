@@ -1,15 +1,15 @@
 # Symbolic Distillation of Graph Neural Networks
 
 ## Description
-The aim of this project is to reproduce the main results of the paper [Discovering Symbolic Models from Deep Learning with Inductive Biases](https://arxiv.org/abs/2006.11287) by Cranmer et al., as part of the MPhil in Data Intensive Science at the University of Cambridge. \
-In this project, we train a different variations of a graph neural network (GNN) (standard, bottleneck, L1, KL and pruning) on particle datasets with different interaction forces (charge, $r^{-1}$, $r^{-2}$ and spring). In all cases, we train on 2D data with four interacting particles.\
-We firstly validate whether the GNNs learn the true forces by performing a linear regression of the true forces on the most important messages. Seperately we then perform a symbolic regression to the message elements using *PySR* to test whether we are capable of reconstructing the true force laws. By combining deep learning with symbolic regression, this framework could be extended to search for new empirical laws in high-dimensional data.\
-We have extended on the original project by introducing a new model variation, the pruning model, where the dimensionality of the messages decreases throughout training.\
+The aim of this project is to reproduce the main results of the paper [Discovering Symbolic Models from Deep Learning with Inductive Biases](https://arxiv.org/abs/2006.11287) by Cranmer et al. \
+In this project, we train a different variants of a Graph Neural Network (GNN) (standard, bottleneck, L1, KL and pruning) on particle datasets with different interaction forces (charge, $r^{-1}$, $r^{-2}$ and spring). In all cases, we train on 2D data with four interacting particles.\
+We firstly validate whether the GNNs learn the true forces by performing a linear regression of the true forces on the most important messages. Seperately we use [SymTorch](https://github.com/elizabethsztan/SymTorch) to approximate the behaviour of the edge model to see if we can extract the true force laws. By combining deep learning with symbolic regression, this framework could be extended to search for new empirical laws in high-dimensional data.\
+We have extended on the original project by introducing a new model variant, the pruning model, where the dimensionality of the messages decreases throughout training.\
 We have also created a new demo Colab notebook, `demo.ipynb`, where the user can test the pipeline on any of the interaction forces or model variations, as an attempt to increase the reproducibility of the pipeline. 
 
 ## Navigating the repo
 ```
-eszt2
+SymTorch_symbolic_distillation_GNNs
 ├── LICENSE
 |
 ├── README.md
@@ -51,8 +51,7 @@ eszt2
 
 ## Colab notebook 
 We recommend you to view the accompanying Colab notebook, `demo.ipynb`, to recreate the pipeline. The notebook mounts to your Google Drive and saves all model weights to your drive directly. \
-To use this notebook, go to Colab and access the demo notebook from the following url: `https://github.com/elizabethsztan/symbolic_distillation_GNNs/blob/main/demo.ipynb`. See the gif below:\
-![demo](media_for_readme/colab.gif)\
+To use this notebook, go to Colab and access the demo notebook from the following url: `https://github.com/elizabethsztan/SymTorch_symbolic_distillation_GNNs/blob/main/demo.ipynb`. See the gif below:\
 If you want to run the code locally on your system, please see below. 
 
 ## Setup 
@@ -82,7 +81,7 @@ We need to generate the datasets that we will use for training. For example, for
 ```bash
 python3 simulations/generate_data.py --sim spring --save
 ``` 
-![demo](media_for_readme/generate_data.gif)\
+
 You can make all four datasets required. Just replace `spring` with `charge`, `r1`, `r2`.
 This will save the data in a new folder in the repository called `datasets`.\
 A fully populated datasets folder looks like \
@@ -101,7 +100,7 @@ To train the models with `wandb` logging:
 ```bash
 python3 train_models_spring.py --save --epoch 100 --wandb_log
 ```
-![demo](media_for_readme/train_model.gif)
+
 
 To train the models without `wandb` logging:
 ```bash
@@ -120,7 +119,6 @@ python3 plot_linear_rep.py --dataset_name spring --model_type bottleneck --num_e
 - The `model_type` arg can take either the model variation as an input (`standard`, `bottleneck`, `L1`, `KL`, `pruning`) or `all` if you want to do the analysis for all models at the same time. 
 - You need to pass in the number of epochs you trained your model for in the `num_epoch` argument.
 - There is an extra argument, `--cutoff`, which you can add. This can take a number and it will only plot a subset of the datapoints if you want a cleaner plot. By default, if you don't include this it will plot all the points in the test set. \
-![demo](media_for_readme/plot_linear_rep.gif)
 
 This populates the folder `linrepr_plots`.
 - The linear plots are saved at `linrepr_plots\{sim}\{model_type}`. This folder contains the plots for both the robust fit and the fit with all datapoints included (in `with_outliers` folder).
@@ -129,16 +127,16 @@ Example populated folder:\
 ![alt text](media_for_readme/linrepr_plots_folder.png)
 
 
-## Symbolic regression 
-We can perform symbolic regression on our trained models to see if we can reconstruct the force law from the edge model. To do this, we have written a script, `symbolic_reg.py`, which uses *PySR* to perform symbolic regression on the two most important messages that were found from the test set. The variables allowed in the symbolic regression are $\Delta x = x_1-x_2$, $\Delta y = y_1-y_2$, the masses of the interacting particles $m_1, m_2$ and their charges $q_1, q_2$.\
-We usually run symbolic regression for `niterations = 6000` to allow the Pareto front of equations to stabilise. Except for the charge dataset where we increase this number to 7000. \
+## Symbolic Regression 
+We can perform SR on our trained models to see if we can reconstruct the force law from the edge model. To do this, we have written a script, `symbolic_reg.py`, which wraps the edge models with the SymTorch's `MLP_SR` class. To aid the efficiency of the SR, we used transformations of the input variables: the variables allowed in the symbolic regression are $\Delta x = x_1-x_2$, $\Delta y = y_1-y_2$, the masses of the interacting particles $m_1, m_2$ and their charges $q_1, q_2$.\
+We run symbolic regression for `niterations = y000` to allow the Pareto front of equations to stabilise.\
 To perform the symbolic regression:
 ```bash
-python3 symbolic_reg.py --dataset_name spring --model_type bottleneck --niterations 6_000 --num_epoch 100 --save 
+python3 symbolic_reg.py --dataset_name spring --model_type bottleneck 
 ``` 
-Make sure to change `num_epoch` to the number of epochs that you trained your model for. \
-![demo](media_for_readme/symbolic_reg.gif)\
-The data is saved in `pysr_objects/{sim}/nit_{niterations}/{model_type}/message1` for message 1 and similar for message 2. If you look at the `hall_of_fame.csv` file, you can see the full Pareto front of equations.
+Make sure to change `num_epoch` to the number of epochs that you trained your model for in the script if this wasn't 100. \
+
+The data is saved in `pysr_objects/{sim}/{model_type}/dim{0,1}` for message 1 and similar for message 2. If you look at the `hall_of_fame.csv` file, you can see the full Pareto front of equations.
 
 **Example Pareto front of equations:**\
 For spring, bottleneck;\
@@ -147,8 +145,6 @@ The red box shows a successful reconstruction as we expect equations in the form
 ![alt text](media_for_readme/spring_eqn.png)\
 for this sim.
 
-In `message_1_sr_metrics` we save the metrics of the symbolic regression including the 'best equation' as chosen by *PySR* but often this is not the equation that reconstructs the force. 
-
 ## Getting prediction losses on test set
 We made a specific script to get the prediction losses on the test set. You need to have made all of the datasets and trained all of your models for 100 epochs (as this is hardcoded into this script). \
 Run:
@@ -156,7 +152,6 @@ Run:
 python3 test_models.py
 ```
 The results will be saves at `model_weights/test_results.json`. \
-![demo](media_for_readme/test_models.gif)
 
 ## Pruning experiments
 As an extension to the original paper, we introduce a new model variation - pruning. This model variation is similar to bottleneck in the way that it restricts the dimensionality of the message vectors and does not add regularisation terms to the loss.\
@@ -174,7 +169,6 @@ If you want to run the pruning experiments yourself, run:
 ```bash
 python3 pruning_experiments.py --epoch 100 --wandb_log --save
 ```
-![demo](media_for_readme/pruning.gif)
 
 If you don't want to log using `wandb`:
 ```bash
@@ -188,21 +182,5 @@ The pruning experiments are run on the charge dataset.
 python3 plot_linear_rep.py --dataset_name charge --model_type pruning_experiments --num-epoch 100
 ```
 Ensure you pass in the correct `num_epoch` corresponding to how long you trained your pruning experiments for, and the correct `dataset_name` for the dataset you trained the models on. \
-![demo](media_for_readme/pruning_r2.gif)
 
 The $R^2$ scores are saved in `linrepr_plots\pruning_experiments\r2_scores_epoch_{epoch}.json`. In the same folder, you can also find the individual linear regression plots if you're interested.
-
-## Autogeneration tools
-Claude Sonnet 4 and ChatGPT-4o were used in both the code and report. We have listed below precisely what we used these autogeneration tools for.
-
-**Code:**
-- Writing the docstrings for the functions and classes in the repository. 
-- Writing comments in the code. 
-- Checking for bugs (eg. 'INSERT ERROR MESSAGE what is causing my code to break?')
-- Plotting aid (eg. 'How do I make the axis labels and the ticks larger in Matplotlib?')
-
-**Report:**
-- Drafting sections of the report (eg. 'Help me draft an abstract. Look in particular at the introduction and conclusion INSERT UNFINISHED REPORT')
-- Rephrasing wording (eg. 'Make this paragraph read better INSERT PARAGRAPH')
-- Creating results tables in Latex (eg. 'Help me create a results table in Latex with these results INSERT RESULTS'). 
-- Proof-reading (eg. 'Point out mistakes I made in my paragraph INSERT REPORT PARAGRAPH').
