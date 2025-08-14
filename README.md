@@ -51,18 +51,18 @@ SymTorch_symbolic_distillation_GNNs
 
 ## Colab notebook 
 We recommend you to view the accompanying Colab notebook, `demo.ipynb`, to recreate the pipeline. The notebook mounts to your Google Drive and saves all model weights to your drive directly. \
-To use this notebook, go to Colab and access the demo notebook from the following url: `https://github.com/elizabethsztan/SymTorch_symbolic_distillation_GNNs/blob/main/demo.ipynb`. See the gif below:\
+To use this notebook, go to Colab and access the demo notebook from the following url: `https://github.com/elizabethsztan/SymTorch_symbolic_distillation_GNNs/blob/main/demo.ipynb`. \
 If you want to run the code locally on your system, please see below. 
 
 ## Setup 
 Ensure you have installed Python3.11 on your system. 
 1. **Clone the repository**
 ```bash
-git clone git@gitlab.developers.cam.ac.uk:phy/data-intensive-science-mphil/assessments/projects/eszt2.git
+git clone git@github.com:elizabethsztan/SymTorch_symbolic_distillation_GNNs.git
 ```
 Go to the repository locally:
 ```bash
-cd eszt2
+cd SymTorch_symbolic_distillation_GNNs
 ```
 
 2. **Install dependencies**
