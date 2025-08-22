@@ -58,7 +58,7 @@ If you want to run the code locally on your system, please see below.
 Ensure you have installed Python3.11 on your system. 
 1. **Clone the repository**
 ```bash
-git clone git@github.com:elizabethsztan/SymTorch_symbolic_distillation_GNNs.git
+git clone git@github.com:XXXXXXX/SymTorch_symbolic_distillation_GNNs.git
 ```
 Go to the repository locally:
 ```bash
