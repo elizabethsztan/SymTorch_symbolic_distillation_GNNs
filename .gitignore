@@ -24,3 +24,5 @@ wandb/
 .DS_Store
 
 CLAUDE.md
+
+sr_on_inputs_results/
