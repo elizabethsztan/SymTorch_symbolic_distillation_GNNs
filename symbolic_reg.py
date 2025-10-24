@@ -1,5 +1,5 @@
 import symtorch 
-from symtorch import MLP_SR
+from symtorch import SymbolicMLP
 from model import load_model, get_edge_index
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
@@ -74,7 +74,7 @@ def main():
 
     # Wrap edge model with SymTorch for symbolic regression (except pruning models)
     if model_type != 'pruning':
-        model.edge_model = MLP_SR(model.edge_model, mlp_name=model_type)
+        model.edge_model = SymbolicMLP(model.edge_model, mlp_name=model_type)
 
     # Prepare test data for edge feature extraction
     X_test, y_test = test_data

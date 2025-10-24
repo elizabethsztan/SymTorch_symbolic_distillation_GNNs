@@ -12,7 +12,7 @@ from datetime import datetime
 import json
 import numpy as np
 import math
-from symtorch import Pruning_MLP
+from symtorch import PruningMLP
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 # script_dir = os.getcwd()
@@ -347,10 +347,10 @@ class PruningGN(NBodyGNN):
     def __init__(self, node_dim = 6, acc_dim = 2, hidden_dim = 300):
         super().__init__(node_dim=node_dim, acc_dim=acc_dim, hidden_dim=hidden_dim)
         self.model_type_ = 'pruning'
-        self.edge_model = Pruning_MLP(self.edge_model, 
+        self.edge_model = PruningMLP(self.edge_model, 
                                       initial_dim = self.message_dim_, 
                                       target_dim = acc_dim, 
-                                      mlp_name = 'Pruning_MLP'
+                                      mlp_name = 'PruningMLP'
                                       )
         
 
